@@ -1,28 +1,80 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_map_live/Authentication/login.dart';
+import 'package:google_map_live/home.dart';
 import 'package:google_map_live/mymap.dart';
+import 'package:google_map_live/profile.dart';
 import 'package:location/location.dart' as loc;
 import 'package:permission_handler/permission_handler.dart';
+import 'Authentication/authService.dart';
 import 'Authentication/studentRegistation.dart';
+import 'Driver/driverInterface.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+    await Firebase.initializeApp();
   runApp(MaterialApp(
+      home: const Myapp(),
     debugShowCheckedModeBanner: false,
-      home: MyApp()
   ));
 }
 
-class MyApp extends StatefulWidget {
+class Myapp extends StatefulWidget {
+  const Myapp({Key? key}) : super(key: key);
   @override
-  _MyAppState createState() => _MyAppState();
+  State<Myapp> createState() => _MyappState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyappState extends State<Myapp> {
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context,snapshot){
+        if(snapshot.connectionState==ConnectionState.active){
+          if(snapshot.hasData){
+            return const HomeActivity();
+          } else if (snapshot.hasError){
+            return Center(
+              child: Text('${snapshot.error}'),
+            );
+          }
+        }
+        if(snapshot.connectionState==ConnectionState.waiting){
+          return const Center(
+            child:  CircularProgressIndicator(
+            ),
+          );
+        }
+        return const LoginPage();
+        }
+    );
+  }
+}
+
+
+
+
+
+
+
+
+
+
+class BusRouteMap extends StatefulWidget {
+  final String? tname,lname;
+  const BusRouteMap({Key? key,this.tname,this.lname}) : super(key: key);
+
+  @override
+  _BusRouteMapState createState() => _BusRouteMapState();
+}
+
+class _BusRouteMapState extends State<BusRouteMap> {
   final loc.Location location = loc.Location();
   StreamSubscription<loc.LocationData>? _locationSubscription;
 
@@ -39,7 +91,7 @@ class _MyAppState extends State<MyApp> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Bus Location'),
+          title: Text(widget.tname.toString()),
         ),
         body: Column(
           children: [
@@ -83,14 +135,15 @@ class _MyAppState extends State<MyApp> {
                                 .toString()),
                           ],
                         ),
-                        trailing: IconButton(
-                          icon: Icon(Icons.location_on),
-                          onPressed: () {
-                            Navigator.of(context).push(MaterialPageRoute(
-                                builder: (context) =>
-                                    MyMap(snapshot.data!.docs[index].id)));
-                          },
-                        ),
+                        // trailing: IconButton(
+                        //   icon: Icon(Icons.directions),
+                        //   onPressed: () {
+                        //     Navigator.of(context).push(MaterialPageRoute(
+                        //         builder: (context) =>
+                        //             MyMap(snapshot.data!.docs[index].id)));
+                        //     print(snapshot.data!.docs[index].id);
+                        //   },
+                        // ),
                       );
                     });
               },
@@ -102,15 +155,15 @@ class _MyAppState extends State<MyApp> {
   }
 
   // Location added to the firebase
- String bustr = 'bustracker';
+
 
   _getLocation() async {
     try {
       final loc.LocationData _locationResult = await location.getLocation();
-      await FirebaseFirestore.instance.collection('busLocation').doc(bustr).set({                 // changed
+      await FirebaseFirestore.instance.collection('busLocation').doc(widget.lname).set({
         'latitude': _locationResult.latitude,
         'longitude': _locationResult.longitude,
-        'name': 'Emran'
+        'name': widget.tname
       }, SetOptions(merge: true));
     } catch (e) {
       print(e);
@@ -125,10 +178,10 @@ class _MyAppState extends State<MyApp> {
         _locationSubscription = null;
       });
     }).listen((loc.LocationData currentlocation) async {
-      await FirebaseFirestore.instance.collection('busLocation').doc(bustr).set({
+      await FirebaseFirestore.instance.collection('busLocation').doc(widget.lname).set({
         'latitude': currentlocation.latitude,
         'longitude': currentlocation.longitude,
-        'name': 'Emran'
+        'name': widget.tname
       }, SetOptions(merge: true));
     });
   }

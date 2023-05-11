@@ -11,11 +11,28 @@ class MyMap extends StatefulWidget {
 }
 
 class _MyMapState extends State<MyMap> {
+
+      BitmapDescriptor? customIcon;
+
+
+  createMarker(context)async{
+    if(customIcon==null){
+      ImageConfiguration configuration = createLocalImageConfiguration(context,size: Size(2, 2));
+      BitmapDescriptor.fromAssetImage(configuration, 'Image/bus2.png')
+      .then((icon){
+        setState(() {
+          customIcon = icon;
+        });
+      });
+    }
+  }
+
   final loc.Location location = loc.Location();
   late GoogleMapController _controller;
   bool _added = false;
   @override
   Widget build(BuildContext context) {
+    createMarker(context);
     return Scaffold(
         body: StreamBuilder(
       stream: FirebaseFirestore.instance.collection('busLocation').snapshots(),
@@ -37,8 +54,10 @@ class _MyMapState extends State<MyMap> {
                       (element) => element.id == widget.user_id)['longitude'],
                 ),
                 markerId: MarkerId('id'),
-                icon: BitmapDescriptor.defaultMarkerWithHue(
-                    BitmapDescriptor.hueMagenta)),
+                icon: customIcon!
+                // BitmapDescriptor.defaultMarkerWithHue(
+                //     BitmapDescriptor.hueMagenta)
+            ),
           },
           initialCameraPosition: CameraPosition(
               target: LatLng(

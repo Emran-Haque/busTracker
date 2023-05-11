@@ -1,11 +1,13 @@
 import 'dart:ui';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:google_map_live/Authentication/authService.dart';
 import 'package:google_map_live/Authentication/studentRegistation.dart';
 import 'package:google_map_live/home.dart';
-
+import '../Driver/driverInterface.dart';
 import '../widgets.dart';
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -18,12 +20,20 @@ class _LoginPageState extends State<LoginPage> {
   final formKey = GlobalKey<FormState>();
   String email = "";
   String password = "";
+  bool _isloading = false;
+  AuthService authService = AuthService();
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        body: SingleChildScrollView(
+        body: _isloading
+            ?Center(
+          child: CircularProgressIndicator(
+            color: Theme.of(context).primaryColor,
+          ),
+        )
+              :SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
@@ -105,7 +115,7 @@ class _LoginPageState extends State<LoginPage> {
                 Center(
                   child: ElevatedButton(
                       onPressed: () {
-                        signIn(email, password);
+                        signIn(email,password);
                       },
                       child: Text("Sign in",
                         style: TextStyle(
@@ -136,17 +146,50 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  // login() async {
+  //   if (formKey.currentState!.validate()) {
+  //     setState(() {
+  //       _isloading = true;
+  //     });
+  //     await authService
+  //         .loginWithUserNameandPassword(email, password)
+  //         .then((value) async {
+  //       if (value == true) {
+  //         QuerySnapshot snapshot =
+  //         await DatabaseService(uid: FirebaseAuth.instance.currentUser!.uid)
+  //             .gettingUserData(email);
+  //         // saving the values to our shared preferences
+  //         await HelperFunctions.saveUserLoggedInStatus(true);
+  //         await HelperFunctions.saveUserEmailSF(email);
+  //         await HelperFunctions.saveUserNameSF(snapshot.docs[0]['fullName']);
+  //         nextScreenReplace(context, const HomeActivity());
+  //       } else {
+  //         showSnackbar(context, Colors.red, value);
+  //         setState(() {
+  //           _isloading = false;
+  //         });
+  //       }
+  //     });
+  //   }
+  // }
+
+
+
   Future signIn(String email, String password) async {
       FirebaseAuth firebaseAuth = FirebaseAuth.instance;
       final User? user = (await firebaseAuth.signInWithEmailAndPassword(
           email: email, password: password)).user;
-      if (user != null) {
+      print(user);
+      print("\n");
+      print("\n");
+      print("\n");
+      if (user != null && email != "driver@gmail.com") {
         Navigator.push(
-            context, CupertinoPageRoute(builder: (context) => Home()));
+            context, CupertinoPageRoute(builder: (context) => HomeActivity()));
       }
-      else {
-        showSnackbar(
-            context, Colors.red, "Your email and password doesn't match!");
+      if(email=="driver@gmail.com"){
+        Navigator.push(
+            context, CupertinoPageRoute(builder: (context) => DriverInterface()));
       }
   }
 }
