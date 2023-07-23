@@ -7,19 +7,21 @@ import 'package:flutter/material.dart';
 import 'package:google_map_live/Authentication/login.dart';
 import 'package:google_map_live/home.dart';
 import 'package:google_map_live/mymap.dart';
-import 'package:google_map_live/profile.dart';
+import 'package:google_map_live/Profile/profile.dart';
+import 'package:google_map_live/splashScreen.dart';
 import 'package:location/location.dart' as loc;
 import 'package:permission_handler/permission_handler.dart';
 import 'Authentication/authService.dart';
-import 'Authentication/studentRegistation.dart';
+import 'Authentication/registation.dart';
 import 'Driver/driverInterface.dart';
+import 'Admin/admin.dart';
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
     await Firebase.initializeApp();
   runApp(MaterialApp(
-      home: const Myapp(),
+      home: const SplashScreen(),
     debugShowCheckedModeBanner: false,
   ));
 }
@@ -31,14 +33,48 @@ class Myapp extends StatefulWidget {
 }
 
 class _MyappState extends State<Myapp> {
+
+  String? status = "";
+
+
+  @override
+  void initState() {
+    checkUser();
+    super.initState();
+  }
+
+  Future checkUser() async {
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(FirebaseAuth.instance.currentUser!.uid)
+        .get()
+        .then((snapshot) async {
+      if (snapshot.exists) {
+        setState(() {
+          status = snapshot.data()!["status"];
+        });
+      }
+    });
+  }
+
+
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
       stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context,snapshot){
+
         if(snapshot.connectionState==ConnectionState.active){
-          if(snapshot.hasData){
-            return const HomeActivity();
+          if(snapshot.hasData ){
+            if(status == "Admin"){
+              return const AdminPanel();
+            }
+            else if(status=="Driver"){
+              return const DriverInterface();
+            }else{
+              return const HomeActivity();
+            }
           } else if (snapshot.hasError){
             return Center(
               child: Text('${snapshot.error}'),
@@ -67,8 +103,9 @@ class _MyappState extends State<Myapp> {
 
 
 class BusRouteMap extends StatefulWidget {
-  final String? tname,lname;
-  const BusRouteMap({Key? key,this.tname,this.lname}) : super(key: key);
+  final String? busName,busSerialNo;
+  final String whichBus;
+  const BusRouteMap({Key? key,this.busName,this.busSerialNo,required this.whichBus}) : super(key: key);
 
   @override
   _BusRouteMapState createState() => _BusRouteMapState();
@@ -91,29 +128,29 @@ class _BusRouteMapState extends State<BusRouteMap> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.tname.toString()),
+          title: Text(widget.busName.toString()),
         ),
         body: Column(
           children: [
-            TextButton(
+            ElevatedButton(
                 onPressed: () {
                   _getLocation();
                 },
-                child: Text('add my location')),
-            TextButton(
+                child: Text('Add my location')),
+            ElevatedButton(
                 onPressed: () {
                   _listenLocation();
                 },
-                child: Text('enable live location')),
-            TextButton(
+                child: Text('Enable live location')),
+            ElevatedButton(
                 onPressed: () {
                   _stopListening();
                 },
-                child: Text('stop live location')),
+                child: Text('Stop live location')),
             Expanded(
                 child: StreamBuilder(
               stream:
-                  FirebaseFirestore.instance.collection('busLocation').snapshots(),
+                  FirebaseFirestore.instance.collection(widget.whichBus).snapshots(),
               builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
                 if (!snapshot.hasData) {
                   return Center(child: CircularProgressIndicator());
@@ -160,10 +197,10 @@ class _BusRouteMapState extends State<BusRouteMap> {
   _getLocation() async {
     try {
       final loc.LocationData _locationResult = await location.getLocation();
-      await FirebaseFirestore.instance.collection('busLocation').doc(widget.lname).set({
+      await FirebaseFirestore.instance.collection(widget.whichBus).doc(widget.busSerialNo).set({
         'latitude': _locationResult.latitude,
         'longitude': _locationResult.longitude,
-        'name': widget.tname
+        'name': widget.busName
       }, SetOptions(merge: true));
     } catch (e) {
       print(e);
@@ -178,10 +215,10 @@ class _BusRouteMapState extends State<BusRouteMap> {
         _locationSubscription = null;
       });
     }).listen((loc.LocationData currentlocation) async {
-      await FirebaseFirestore.instance.collection('busLocation').doc(widget.lname).set({
+      await FirebaseFirestore.instance.collection(widget.whichBus).doc(widget.busSerialNo).set({
         'latitude': currentlocation.latitude,
         'longitude': currentlocation.longitude,
-        'name': widget.tname
+        'name': widget.busName
       }, SetOptions(merge: true));
     });
   }

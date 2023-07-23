@@ -1,203 +1,286 @@
+import 'dart:io';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_map_live/profile.dart';
+import 'package:google_map_live/Drawer/about.dart';
+import 'package:google_map_live/Drawer/developedBy.dart';
+import 'package:google_map_live/Driver/driverList.dart';
+import 'package:google_map_live/Driver/staffDriver.dart';
+import 'package:google_map_live/Driver/stuDriver.dart';
+import 'package:google_map_live/Driver/teachDriver.dart';
+import 'package:google_map_live/busList.dart';
+import 'package:google_map_live/busSchedule.dart';
+import 'package:google_map_live/Profile/profile.dart';
+import 'package:google_map_live/privacyPolicy.dart';
 import 'package:google_map_live/widgets.dart';
 
-import 'Rider/studentBus.dart';
-import 'Rider/teachersBus.dart';
+import 'Authentication/authService.dart';
+import 'Authentication/login.dart';
 
-class HomeActivity extends StatelessWidget{
+class HomeActivity extends StatefulWidget {
   const HomeActivity({Key? key}) : super(key: key);
 
-  MySnackBar(massage,context){
-    return ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(massage))
-    );
-  }
+  @override
+  State<HomeActivity> createState() => _HomeActivityState();
+}
+class _HomeActivityState extends State<HomeActivity>{
 
-
+  AuthService authService = AuthService();
   @override
   Widget build(BuildContext context) {
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Bus Tracker"),
-        titleSpacing: 0,
-        //centerTitle: true,
-        toolbarHeight: 50,
-        toolbarOpacity: 0.8,
-        elevation: 0,
-      //  backgroundColor: Colors.deepOrange,
-        actions: [
-          //IconButton(onPressed: (){MySnackBar("This is Home.",context);}, icon: Icon(Icons.home)),
-          //IconButton(onPressed: (){}, icon: Icon(Icons.comment)),
-          IconButton(onPressed: (){MySnackBar("This is Notification.",context);}, icon: Icon(Icons.notifications)),
-          //IconButton(onPressed: (){MySnackBar("This is Search.",context);}, icon: Icon(Icons.search)),
-          //IconButton(onPressed: (){MySnackBar("This is Setting.",context);}, icon: Icon(Icons.settings)),
-        ],
-      ),
-
-
-      bottomNavigationBar: BottomNavigationBar(                                                 //   bottom Navigation bar
-        currentIndex: 0,
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.home),label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.location_on),label: "Bus Location"),
-          BottomNavigationBarItem(icon: Icon(Icons.person),label: "Profile"),
-        ],
-        onTap: (int index)
-        {
-          if(index==0)
-          {
-            MySnackBar("This Home.", context);
-
-          }
-          if(index==1){
-            MySnackBar("Find the bus.", context);
-          }
-          if(index==2){
-
-            Navigator.push(context, MaterialPageRoute(builder: (context)=>Profile()));
-          }
-        },
-      ),
-
-      drawer: Drawer(                                                   //  Navigation bar
-        child: ListView(
-
-          children: [
-            DrawerHeader(
-                padding: EdgeInsets.all(0),
-                child: UserAccountsDrawerHeader(
-                  decoration: BoxDecoration(color: Colors.deepOrange),
-                  accountName: Text("Bus Tracker",style: TextStyle(color: Colors.black,fontSize:25),),
-                  accountEmail: Text(""),
-                  currentAccountPicture: Image.asset("Image/bus1.png"),
-                )
-            ),
-            ListTile(
-              leading: Icon(Icons.home),
-              title: Text("Home"),
-              onTap: (){
-                Navigator.push(context, MaterialPageRoute(builder: (context)=>HomeActivity()));
-              },
-            ),
-
-            ListTile(
-              leading: Icon(Icons.bus_alert_sharp),
-              title: Text("Bus's List"),
-              // onTap: (){
-              //   Navigator.push(context, MaterialPageRoute(builder: (context)=>BusListActivity()));},
-            ),
-
-            ListTile(
-              leading: Icon(Icons.call),
-              title: Text("Drivers Number"),
-              onTap: (){
-                MySnackBar("Sumon- 01700000000", context);
-                //MySnackBar("Saddam- 01700000000", context);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.help)
-              ,title: Text("Help"),
-              onTap: (){
-                MySnackBar("This service is unable right now", context);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.settings),
-              title: Text("Settings"),
-              onTap: (){
-                MySnackBar("This is settings.", context);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.info_outline),
-              title: Text("About us"),
-              onTap: (){
-                MySnackBar("Hi I am Sayed Mohaiminul Haque. I am from Sheikh Hasina University. If you find any problem, Please call in this number. 01767415557", context);
-              },
-            )
-          ],
+    return WillPopScope(
+      onWillPop:()=> _onBackButtonPressed(context),
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text("SHU Transport"),
         ),
-      ),
+        drawer: Drawer(                                                   //  Navigation bar
+          child: ListView(
 
+            children: [
+              DrawerHeader(
+                  child: UserAccountsDrawerHeader(
+                    currentAccountPictureSize: Size.square(50.0),
+                    decoration: BoxDecoration(color: Colors.blue.shade50),
+                    accountName: Text("SHU Transport",style: TextStyle(color: Colors.black,fontSize:22),),
+                    accountEmail: Text("transport@shu.edu.bd",style: TextStyle(color: Colors.red.shade500),),
+                    currentAccountPicture: Image.asset("Image/bus.png"),
+                  )
+              ),
+              ListTile(
+                leading: Icon(Icons.home),
+                title: Text("Home"),
+                onTap: (){
+                  Navigator.push(context, MaterialPageRoute(builder: (context)=>HomeActivity()));
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.person),
+                title: Text("Profile"),
+                onTap: (){
+                  Navigator.push(context, MaterialPageRoute(builder: (context)=>Profile()));
+                },
+              ),
 
+              ListTile(
+                leading: Icon(Icons.bus_alert_sharp),
+                title: Text("Bus List"),
+                 onTap: (){
+                   Navigator.push(context, MaterialPageRoute(builder: (context)=>BusList()));
+                 },
+              ),
 
+              ListTile(
+                leading: Icon(Icons.call),
+                title: Text("Drivers Number"),
+                onTap: (){
+                  Navigator.push(context, MaterialPageRoute(builder: (context)=>DriverList()));
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.privacy_tip_outlined)
+                ,title: Text("Privacy"),
+                onTap: (){
+                  Navigator.push(context, MaterialPageRoute(builder: (context)=>PrivacyPolicy()));
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.developer_board),
+                title: Text("Developed By"),
+                onTap: (){
+                  Navigator.push(context, MaterialPageRoute(builder: (context)=>DevelopedBy()));
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.info_outline),
+                title: Text("About "),
+                onTap: (){
+                  Navigator.push(context, MaterialPageRoute(builder: (context)=>About()));
+                },
+              ),
+              Divider(),
+              ListTile(
+                leading: Icon(Icons.logout),
+                title: Text("Log Out"),
+                onTap: () async {
+                  bool exitApp = await showDialog(
+                      context: context,
+                      builder: (BuildContext context){
+                        return AlertDialog(
+                          title: const Text("Log Out"),
+                          content: const Text("Do you want to log out?"),
+                          actions: [
+                            TextButton(onPressed: (){
+                              Navigator.of(context).pop(false);
+                            }, child: const Text("No")),
 
-      body: GridView.count(
-          crossAxisCount: 2,
-          crossAxisSpacing: 11,
-        mainAxisSpacing: 11,
-        children: [
-          InkWell(
-            child: Container(
-                child: Column(
-                  children: [
-                    Container(
-                      child: Image.asset("Image/bus1.png"),
-                    ),
-                    Text("Teacher's Bus",
-                      style: TextStyle(
-                        fontSize: 25.0,
+                            TextButton(onPressed: (){
+                              authService.signOut();
+                              Navigator.of(context).pushAndRemoveUntil(
+                                  MaterialPageRoute(
+                                      builder: (context) => const LoginPage()),
+                                      (route) => false);
+                            }, child: const Text("Yes")),
+
+                          ],
+                        );
+                      }
+                  );
+                },
+              )
+            ],
+          ),
+        ),
+
+        body: Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: Center(
+            child: GridView.count(
+
+                crossAxisCount: 2,
+                crossAxisSpacing: 11,
+              mainAxisSpacing: 11,
+              children: [
+                InkWell(
+                  child: Container(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            child: Image.asset("Image/bus1.png"),
+                          ),
+                          Text("Bus List",
+                            style: TextStyle(
+                              fontSize: 25.0,
+                            ),
+                          )
+                        ],
                       ),
-                    )
-                  ],
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        border: Border.all(color: Colors.blue,width: 2),
+                      )
+                  ),
+                  onTap: (){
+                    Navigator.push(context, MaterialPageRoute(builder: (context)=>BusList()));
+                  },
+                ),
+                InkWell(
+                  child: Container(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            child: Image.asset("Image/bus1.png"),
+                          ),
+                          Text("Bus Schedule",
+                            style: TextStyle(
+                              fontSize: 25.0,
+                            ),
+                          )
+                        ],
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        border: Border.all(color: Colors.blue,width: 2),
+                      )
+                  ),
+                  onTap: (){
+                    Navigator.push(context, MaterialPageRoute(builder: (context)=>BusSchedule()));
+                  },
+                ),
+                InkWell(
+                  child: Container(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            child: CircleAvatar(
+                              radius: 55.0,
+                              backgroundImage: AssetImage("Image/Driver.png"),
+                              backgroundColor: Colors.blue.shade50,
+                            )
+                          ),
+                          Text("Driver List",
+                            style: TextStyle(
+                              fontSize: 25.0,
+                            ),
+                          )
+                        ],
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        border: Border.all(color: Colors.blue,width: 2),
+                      )
+                  ),
+                  onTap: (){
+                    Navigator.push(context, MaterialPageRoute(builder: (context)=>DriverList()));
+                  },
                 ),
 
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade100,
-                  border: Border.all(color: Colors.deepOrange,width: 2),
-                )
-            ),
-            onTap: (){Navigator.push(context, MaterialPageRoute(builder: (context)=>TeacherBus()));},
-          ),
-
-          InkWell(
-            child: Container(
-              child: Column(
-                children: [
-                  Container(
-                    child: Image.asset("Image/bus1.png"),
+                InkWell(
+                  child: Container(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            child: CircleAvatar(
+                              radius: 55.0,
+                              backgroundImage: AssetImage("Image/person.png"),
+                              backgroundColor: Colors.blue.shade50,
+                            ),
+                          ),
+                          Text("Profile",
+                            style: TextStyle(
+                              fontSize: 25.0,
+                            ),
+                          )
+                        ],
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        border: Border.all(color: Colors.blue,width: 2),
+                      )
                   ),
-                  Text("Student Bus",
-                    style: TextStyle(
-                      fontSize: 25.0,
-                    ),
-                  )
-                ],
-              ),
+                  onTap: (){
+                    Navigator.push(context, MaterialPageRoute(builder: (context)=>Profile()));
+                  },
+                ),
 
-              decoration: BoxDecoration(
-                  color: Colors.orange.shade100,
-                  border: Border.all(color: Colors.deepOrange,width: 2)
-              ),
+
+              ],
             ),
-            onTap: (){Navigator.push(context, MaterialPageRoute(builder: (context)=>StudentBus()));},
           ),
-          InkWell(
-            child: Container(
-              child: Column(
-                children: [
-                  Container(
-                    child: Image.asset("Image/bus1.png"),
-                  ),
-                  Text("Staff Bus",
-                    style: TextStyle(
-                      fontSize: 25.0,
-                    ),
-                  )
-                ],
-              ),
-              decoration: BoxDecoration(
-                  color: Colors.orange.shade100,
-                  border: Border.all(color: Colors.deepOrange,width: 2)
-              ),
-            ),
-             //onTap: (){Navigator.push(context, MaterialPageRoute(builder: (context)=>StaffBusActivity()));},
-          )
-        ],
+        ),
       ),
     );
+  }
+  Future<bool> _onBackButtonPressed(BuildContext context) async{
+    bool exitApp = await showDialog(
+        context: context,
+        builder: (BuildContext context){
+          return AlertDialog(
+            title: const Text("SHU Transport"),
+            content: const Text("Do you want to close the app?"),
+            actions: [
+              TextButton(onPressed: (){
+                Navigator.of(context).pop(false);
+              }, child: const Text("No")),
+
+              TextButton(onPressed: (){
+                exit(0);
+                // Navigator.of(context).pop(true);
+              }, child: const Text("Yes")),
+
+            ],
+          );
+        }
+    );
+    return exitApp ?? false;
   }
 }

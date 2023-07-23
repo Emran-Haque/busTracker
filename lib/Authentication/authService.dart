@@ -26,7 +26,7 @@ class AuthService {
 
   //register
   Future registerUserWithEmailandPassword(
-      String fullName, String email,String dept,String session,String mobile, String password) async {
+      String fullName, String email,String dept,String mobile, String password) async {
     try {
       User user = (await firebaseAuth.createUserWithEmailAndPassword(
           email: email, password: password))
@@ -34,7 +34,7 @@ class AuthService {
 
       if (user != null) {
         // call our database service to update the user data.
-        await DatabaseService(uid: user.uid).savingUserData(fullName, email,dept,session,mobile);
+        await DatabaseService(uid: user.uid).savingUserData(fullName, email,dept,mobile);
         return true;
       }
     } on FirebaseAuthException catch (e) {
@@ -108,12 +108,11 @@ class DatabaseService {
   // reference for our collections
   final CollectionReference userCollection =
   FirebaseFirestore.instance.collection("users");
-  Future savingUserData(String fullName, String email,String dept,String session,String mobile) async {
+  Future savingUserData(String fullName, String email,String dept,String mobile) async {
     return await userCollection.doc(uid).set({
       "fullName": fullName,
       "email": email,
-      "dept": dept,
-      "session": session,
+      "status": dept,
       "mobile": mobile,
     });
   }

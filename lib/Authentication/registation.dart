@@ -1,16 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_map_live/Authentication/login.dart';
-import 'package:google_map_live/home.dart';
-
+import 'package:google_map_live/Admin/admin.dart';
 import '../widgets.dart';
 import 'authService.dart';
 
 class StudentRegi extends StatefulWidget {
   const StudentRegi({Key? key}) : super(key: key);
-
   @override
   State<StudentRegi> createState() => _StudentRegiState();
 }
@@ -27,8 +23,7 @@ class _StudentRegiState extends State<StudentRegi> {
 
   AuthService authService = AuthService();
 
-  List listItem = [ "CSE","English","Economics","Bangla" ];
-  List status = ["Teacher","Student","Driver"];
+  List listItem = [ "Admin", "Teacher","Student","Staff","Driver" ];
 
 
   @override
@@ -129,7 +124,7 @@ class _StudentRegiState extends State<StudentRegi> {
                     ),
                     dropdownColor: Colors.white,
                     decoration: textInputDecoration.copyWith(
-                      labelText: "Department",
+                      labelText: "Status",
                       prefixIcon: Icon(
                         Icons.bookmark_add_outlined,
                         color: Theme.of(context).primaryColor,
@@ -137,32 +132,8 @@ class _StudentRegiState extends State<StudentRegi> {
                     ),
                   ),
 
-
-
-
                   const SizedBox(height: 10),
-                  TextFormField(                                                            // SignUp full name
-                    decoration: textInputDecoration.copyWith(
-                        labelText: "Session",
-                        prefixIcon: Icon(
-                          Icons.person,
-                          color: Theme.of(context).primaryColor,
-                        )),
-                    onChanged: (val) {
-                      setState(() {
-                        session = val;
-                      });
-                    },
-                    validator: (val) {
-                      if (val!.isNotEmpty) {
-                        return null;
-                      } else {
-                        return "Session cannot be empty";
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  TextFormField(                                                            // SignUp full name
+                  TextFormField(                                                            // MObile
                     decoration: textInputDecoration.copyWith(
                         labelText: "Mobile",
                         prefixIcon: Icon(
@@ -224,6 +195,8 @@ class _StudentRegiState extends State<StudentRegi> {
                       ),
                       onPressed: () {
                         stregister();                             // ----->>>>  Registration Page
+                        Navigator.push(context, MaterialPageRoute(builder: (context) =>
+                            AdminPanel()));
                       },
                     ),
                   ),
@@ -231,20 +204,6 @@ class _StudentRegiState extends State<StudentRegi> {
                     height: 10,
                   ),
 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text("Already have an account? "),
-                      TextButton(onPressed: () {
-                        Navigator.of(context)
-                            .push(MaterialPageRoute(builder: (context) =>
-                            LoginPage()));
-                      },
-                          child: Text(
-                              "Login now"
-                          ))
-                    ],
-                  ),
 
                 ],
               )),
@@ -255,27 +214,46 @@ class _StudentRegiState extends State<StudentRegi> {
 
 
   stregister() async {
-    if (formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
-      await authService
-          .registerUserWithEmailandPassword(fullName, email,valD,session,mobile, password)
-          .then((value) async {
-        if (value == true) {
-          // saving the shared preference state
-          await HelperFunctions.saveUserLoggedInStatus(true);
-          await HelperFunctions.saveUserEmailSF(email);
-          await HelperFunctions.saveUserNameSF(fullName);
-          nextScreenReplace(context, const HomeActivity());
-        } else {
-          showSnackbar(context, Colors.red, value);
-          setState(() {
-            _isLoading = false;
-          });
-        }
+    if(valD == "Driver"){
+      await FirebaseFirestore.instance.collection("driverList").doc(email).set({
+        'name': fullName,
+        'mobile': mobile
       });
     }
+    try{
+      if (formKey.currentState!.validate()) {
+        setState(() {
+          _isLoading = true;
+        });
+        await authService
+            .registerUserWithEmailandPassword(fullName, email,valD,mobile, password)
+            .then((value) async {
+          if (value == true) {
+            // saving the shared preference state
+            await HelperFunctions.saveUserLoggedInStatus(true);
+            await HelperFunctions.saveUserEmailSF(email);
+            await HelperFunctions.saveUserNameSF(fullName);
+            showToast("Succesfully Signed Up");
+
+          } else {
+            showSnackbar(context, Colors.red, value);
+            setState(() {
+              _isLoading = false;
+            });
+          }
+        });
+      }
+    }on FirebaseAuthException catch(e){
+      if(e.code == 'weak-password'){
+        showToast("Password Provided Weak");
+      }else if(e.code == 'email-already-in-use'){
+        showToast("Email Provided already Exists");
+      }
+    }catch(e){
+      showToast(e.toString());
+    }
+
+
   }
 
 
