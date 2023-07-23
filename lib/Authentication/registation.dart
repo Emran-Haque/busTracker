@@ -1,15 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_map_live/Authentication/login.dart';
-import 'package:google_map_live/home.dart';
-
+import 'package:google_map_live/Admin/admin.dart';
 import '../widgets.dart';
+import 'authService.dart';
 
 class StudentRegi extends StatefulWidget {
   const StudentRegi({Key? key}) : super(key: key);
-
   @override
   State<StudentRegi> createState() => _StudentRegiState();
 }
@@ -21,14 +18,20 @@ class _StudentRegiState extends State<StudentRegi> {
   String password = "";
   String fullName = "";
   String valD="";
+  String session="";
+  String mobile="";
 
-  List listItem = [ "CSE","English","Economics","Bangla" ];
+  AuthService authService = AuthService();
+
+  List listItem = [ "Admin", "Teacher","Student","Staff","Driver" ];
 
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
+      appBar: AppBar(
+        title: Text("Sign Up"),
+      ),
       body: _isLoading
           ? Center(
           child: CircularProgressIndicator(
@@ -36,7 +39,7 @@ class _StudentRegiState extends State<StudentRegi> {
           : SingleChildScrollView(
         child: Padding(
           padding:
-          const EdgeInsets.symmetric(horizontal: 20, vertical: 80),
+          const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
           child: Form(
               key: formKey,
               child: Column(
@@ -53,7 +56,7 @@ class _StudentRegiState extends State<StudentRegi> {
                       "Create your account now know the bus location",
                       style: TextStyle(
                           fontSize: 15, fontWeight: FontWeight.w400)),
-                  Image.asset("Image/busImage.png"),
+                  Image.asset("Image/bus.png"),
                   TextFormField(                                                            // SignUp full name
                     decoration: textInputDecoration.copyWith(
                         labelText: "Full Name",
@@ -75,7 +78,7 @@ class _StudentRegiState extends State<StudentRegi> {
                     },
                   ),
                   const SizedBox(
-                    height: 15,
+                    height: 10,
                   ),
                   TextFormField(                                              // SignUp  Email
                     decoration: textInputDecoration.copyWith(
@@ -100,7 +103,7 @@ class _StudentRegiState extends State<StudentRegi> {
                           : "Please enter a valid email";
                     },
                   ),
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 10),
 
                   DropdownButtonFormField(                                              // Dropdown Menu
                     value: valD.isNotEmpty?valD:null,
@@ -121,7 +124,7 @@ class _StudentRegiState extends State<StudentRegi> {
                     ),
                     dropdownColor: Colors.white,
                     decoration: textInputDecoration.copyWith(
-                      labelText: "Department",
+                      labelText: "Status",
                       prefixIcon: Icon(
                         Icons.bookmark_add_outlined,
                         color: Theme.of(context).primaryColor,
@@ -129,9 +132,29 @@ class _StudentRegiState extends State<StudentRegi> {
                     ),
                   ),
 
+                  const SizedBox(height: 10),
+                  TextFormField(                                                            // MObile
+                    decoration: textInputDecoration.copyWith(
+                        labelText: "Mobile",
+                        prefixIcon: Icon(
+                          Icons.person,
+                          color: Theme.of(context).primaryColor,
+                        )),
+                    onChanged: (val) {
+                      setState(() {
+                        mobile = val;
+                      });
+                    },
+                    validator: (val) {
+                      if (val!.isNotEmpty) {
+                        return null;
+                      } else {
+                        return "Mobile cannot be empty";
+                      }
+                    },
+                  ),
 
-
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 10),
 
                   TextFormField(                                                      // SignUp  Password
                     obscureText: true,
@@ -155,7 +178,7 @@ class _StudentRegiState extends State<StudentRegi> {
                     },
                   ),
                   const SizedBox(
-                    height: 20,
+                    height: 15,
                   ),
                   SizedBox(
                     width: double.infinity,
@@ -171,7 +194,9 @@ class _StudentRegiState extends State<StudentRegi> {
                         TextStyle(color: Colors.white, fontSize: 16),
                       ),
                       onPressed: () {
-                        stregister(fullName,email,valD,password);                             // ----->>>>  Registration Page
+                        stregister();                             // ----->>>>  Registration Page
+                        Navigator.push(context, MaterialPageRoute(builder: (context) =>
+                            AdminPanel()));
                       },
                     ),
                   ),
@@ -179,20 +204,6 @@ class _StudentRegiState extends State<StudentRegi> {
                     height: 10,
                   ),
 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text("Already have an account? "),
-                      TextButton(onPressed: () {
-                        Navigator.of(context)
-                            .push(MaterialPageRoute(builder: (context) =>
-                            LoginPage()));
-                      },
-                          child: Text(
-                              "Login now"
-                          ))
-                    ],
-                  ),
 
                 ],
               )),
@@ -200,23 +211,51 @@ class _StudentRegiState extends State<StudentRegi> {
       ),
     );
   }
-  Future stregister(String fullName,String email,String dept,String password) async{
-    FirebaseAuth firebaseAuth = FirebaseAuth.instance;
-    final User? user = (await firebaseAuth.createUserWithEmailAndPassword(email: email, password: password)).user;
-    final db = FirebaseFirestore.instance.collection("StudentInfo").add({
-      'name': fullName,
-      'email' : email,
-      'dept' : dept,
-      'session' : '2018-19',
-    });
-    final em = FirebaseFirestore.instance.collection("StudentsEmail").add({
-      'email' : email
-    });
-    if(user!=null){
-      Navigator.of(context)
-          .push(MaterialPageRoute(builder: (context) =>
-          Home()));
+
+
+  stregister() async {
+    if(valD == "Driver"){
+      await FirebaseFirestore.instance.collection("driverList").doc(email).set({
+        'name': fullName,
+        'mobile': mobile
+      });
     }
+    try{
+      if (formKey.currentState!.validate()) {
+        setState(() {
+          _isLoading = true;
+        });
+        await authService
+            .registerUserWithEmailandPassword(fullName, email,valD,mobile, password)
+            .then((value) async {
+          if (value == true) {
+            // saving the shared preference state
+            await HelperFunctions.saveUserLoggedInStatus(true);
+            await HelperFunctions.saveUserEmailSF(email);
+            await HelperFunctions.saveUserNameSF(fullName);
+            showToast("Succesfully Signed Up");
+
+          } else {
+            showSnackbar(context, Colors.red, value);
+            setState(() {
+              _isLoading = false;
+            });
+          }
+        });
+      }
+    }on FirebaseAuthException catch(e){
+      if(e.code == 'weak-password'){
+        showToast("Password Provided Weak");
+      }else if(e.code == 'email-already-in-use'){
+        showToast("Email Provided already Exists");
+      }
+    }catch(e){
+      showToast(e.toString());
+    }
+
+
   }
+
+
 }
 
